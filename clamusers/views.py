@@ -8,14 +8,31 @@ from django.core.context_processors import csrf
 from django.template import RequestContext
 import hashlib
 
+def autoactivate(clamuser):
+    try:
+        if '@' not in clamuser.mail:
+            return False
+        userdomain = clamuser.mail[clamuser.mail.find('@')+1:]
+        for domain in settings.AUTOACTIVATE:
+            if userdomain == domain or userdomain.endswith('.' + domain):
+                return True
+        return False
+    except AttributeError:
+        return False
 
 def register(request):
     if request.method == 'POST': # If the form has been submitted...
         form = RegisterForm(request.POST) # A form bound to the POST data
         if form.is_valid(): # All validation rules pass
             clamuser = form.save()
-            send_mail('[' + settings.DOMAIN + '] Registration request from ' + clamuser.username + ' pending approval' , 'The following new account is pending approval:\n\nUsername: ' + clamuser.username + '\nFull name: '  +clamuser.fullname + '\nInstitution: ' + clamuser.institution + '\nMail: ' + clamuser.mail + '\n\nTo approve this user go to: ' + settings.BASEURL + 'activate/' + str(clamuser.pk), settings.FROMMAIL, [ x[1] for x in settings.ADMINS ] , fail_silently=False)
-            return render_to_response('submitted.html')
+            if autoactivate(clamuser):
+                clamuser.active=True
+                clamuser.save()
+                send_mail('[' + settings.DOMAIN + '] Registration request from ' + clamuser.username + ' automatically approved' , 'The following new account has been automatically approved, no further action is required:\n\nUsername: ' + clamuser.username + '\nFull name: '  +clamuser.fullname + '\nInstitution: ' + clamuser.institution + '\nMail: ' + clamuser.mail + '\n\n', settings.FROMMAIL, [ x[1] for x in settings.ADMINS ] , fail_silently=False)
+                return render_to_response('activated.html')
+            else:
+                send_mail('[' + settings.DOMAIN + '] Registration request from ' + clamuser.username + ' pending approval' , 'The following new account is pending approval:\n\nUsername: ' + clamuser.username + '\nFull name: '  +clamuser.fullname + '\nInstitution: ' + clamuser.institution + '\nMail: ' + clamuser.mail + '\n\nTo approve this user go to: ' + settings.BASEURL + 'activate/' + str(clamuser.pk), settings.FROMMAIL, [ x[1] for x in settings.ADMINS ] , fail_silently=False)
+                return render_to_response('submitted.html')
     else:
         c = RequestContext(request)
         c.update(csrf(request))
