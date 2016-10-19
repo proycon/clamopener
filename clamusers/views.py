@@ -6,6 +6,7 @@ from django.http import HttpResponse, HttpResponseForbidden,HttpResponseNotFound
 from django.core.mail import send_mail
 from django.core.context_processors import csrf
 from django.template import RequestContext
+from django.db import IntegrityError
 import hashlib
 
 def autoactivate(clamuser):
@@ -24,10 +25,16 @@ def register(request):
     if request.method == 'POST': # If the form has been submitted...
         form = RegisterForm(request.POST) # A form bound to the POST data
         if form.is_valid(): # All validation rules pass
-            clamuser = form.save()
+            try:
+                clamuser = form.save()
+            except IntegrityError:
+                return HttpResponseForbidden("That username is already registered (1)", content_type="text/plain")
             if autoactivate(clamuser):
-                clamuser.active=True
-                clamuser.save()
+                clamuser = CLAMUsers(username=clamuser.username, password=clamuser.password,fullname=clamuser.fullname, institution=clamuser.institution, mail=clamuser.mail,active=True)
+                try:
+                    clamuser.save()
+                except IntegrityError:
+                    return HttpResponseForbidden("That username is already registered (2)", content_type="text/plain")
                 send_mail('[' + settings.DOMAIN + '] Registration request from ' + clamuser.username + ' automatically approved' , 'The following new account has been automatically approved, no further action is required:\n\nUsername: ' + clamuser.username + '\nFull name: '  +clamuser.fullname + '\nInstitution: ' + clamuser.institution + '\nMail: ' + clamuser.mail + '\n\n', settings.FROMMAIL, [ x[1] for x in settings.ADMINS ] , fail_silently=False)
                 return render_to_response('activated.html')
             else:
@@ -48,7 +55,10 @@ def activate(request, userid):
             except:
                 return HttpResponseNotFound("No such user", content_type="text/plain")
             clamuser = CLAMUsers(username=pendinguser.username, password=pendinguser.password,fullname=pendinguser.fullname, institution=pendinguser.institution, mail=pendinguser.mail,active=True)
-            clamuser.save()
+            try:
+                clamuser.save()
+            except IntegrityError:
+                return HttpResponseForbidden("User is already activated", content_type="text/plain")
             send_mail('Webservice account on ' + settings.DOMAIN , 'Dear ' + clamuser.fullname + '\n\nYour webservice account on ' + settings.DOMAIN + ' has been reviewed and activated.\n\n(this is an automated message)', settings.FROMMAIL, [clamuser.mail] + [ x[1] for x in settings.ADMINS ] , fail_silently=False)
             return HttpResponse("Succesfully activated", content_type="text/plain")
         else:
