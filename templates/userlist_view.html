@@ -1,0 +1,31 @@
+<html>
+  <head>
+        <meta http-equiv="content-type" content="application/xhtml+xml; charset=utf-8"/> 
+        <title>Webservice Registration</title>
+        <link rel="StyleSheet" href="/style/clamopener.css" type="text/css" /> 
+        <link href='http://fonts.googleapis.com/css?family=Ubuntu' rel='stylesheet' type='text/css'/>
+  </head>
+  <body>
+      <div id="container">
+          <div id="header">
+              <h1>User list</h1>
+          </div>
+          <div class="box">              
+              <table>
+                  <tr><th>ID</th><th>Username</th><th>Full Name</th><th>Institution</th><th>Mail</th><th>Actions</th></tr>
+                  {% for user in users %}
+                  <tr>
+                      <td>{{user.pk}}</td>
+                      <td>{{user.username}}</td>
+                      <td>{{user.fullname}}</td>
+                      <td>{{user.institution}}</td>
+                      <td><a href="mailto:{{user.mail}}">{{user.mail}}</a></td>
+                      <td><a href="{{baseurl}}/changepw/{{user.pk}}">Change Pw</a></td>
+                  </tr>
+                  {% endfor %}
+              </table>
+          </div>
+        </div>          
+  </body>
+</html>
+

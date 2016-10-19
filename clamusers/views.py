@@ -103,36 +103,30 @@ def changepw(request, userid):
 
 def userlist(request):
     if request.method == 'POST':
-        s = "The following accounts are active:\n\n"
-        report = []
-        for clamuser in CLAMUsers.objects.filter(active=1):
-            report.append('ID: ' + str(clamuser.pk) + '\nUsername: ' + clamuser.username + '\nFull name: '  +clamuser.fullname + '\nInstitution: ' + clamuser.institution + '\nMail: ' + clamuser.mail + '\nTo change password go to: ' + settings.BASEURL + 'changepw/' + str(clamuser.pk)+'\n\n')
-
-        if report:
-            s = "\n\n".join(report)
-        else:
-            s = "(no active accounts found)"
-
-        return HttpResponse(report) #plaintext
+        if hashlib.md5(request.POST['pw']).hexdigest() != settings.MASTER_PASSWORD:
+            return HttpResponseForbidden("Master password invalid", content_type="text/plain")
+        c = RequestContext(request)
+        c.update(csrf(request))
+        return render_to_response('userlist_view.html',{'users': CLAMUsers.objects.filter(active=1)},context_instance=c)
     else:
         c = RequestContext(request)
         c.update(csrf(request))
         return render_to_response('userlist.html',context_instance=c)
 
 def report(request):
-    s = "The following accounts are pending approval:\n\n"
-    report = []
-    for clamuser in PendingUsers.objects.filter(active=0):
-        report.append('ID: ' + str(clamuser.pk) + '\nUsername: ' + clamuser.username + '\nFull name: '  +clamuser.fullname + '\nInstitution: ' + clamuser.institution + '\nMail: ' + clamuser.mail + '\n\nTo approve this user go to: ' + settings.BASEURL + 'activate/' + str(clamuser.pk)+'\n\n')
+    #s = "The following accounts are pending approval:\n\n"
+    #report = []
+    #for clamuser in PendingUsers.objects.filter(active=0):
+    #    report.append('ID: ' + str(clamuser.pk) + '\nUsername: ' + clamuser.username + '\nFull name: '  +clamuser.fullname + '\nInstitution: ' + clamuser.institution + '\nMail: ' + clamuser.mail + '\n\nTo approve this user go to: ' + settings.BASEURL + 'activate/' + str(clamuser.pk)+'\n\n')
 
-    if report:
-        s = "\n\n".join(report)
-    else:
-        s = "(no pending accounts found)"
+    #if report:
+    #    s = "\n\n".join(report)
+    #else:
+    #    s = "(no pending accounts found)"
 
-    send_mail('[' + settings.DOMAIN + '] Report of pending accounts' , s , settings.FROMMAIL, [ x[1] for x in settings.ADMINS ] , fail_silently=False)
+    #send_mail('[' + settings.DOMAIN + '] Report of pending accounts' , s , settings.FROMMAIL, [ x[1] for x in settings.ADMINS ] , fail_silently=False)
 
-    return HttpResponse("done")
+    return HttpResponse("not implemented")
 
 
 
