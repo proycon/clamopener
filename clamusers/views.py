@@ -84,7 +84,7 @@ def changepw(request, userid):
         if ((pwhash(clamuser.username,request.POST['pw']) == clamuser.password) or (hashlib.md5(request.POST['pw']).hexdigest() == settings.MASTER_PASSWORD)):
             clamuser.password=pwhash(clamuser.username,request.POST['newpw'])
             clamuser.save()
-            send_mail('Webservice account on ' + settings.DOMAIN , 'Dear ' + clamuser.fullname + '\n\nYour webservice account on ' + settings.DOMAIN + ' has had its password changed to: ' + request.POST['newpw'] + ".\n\n(this is an automated message)", settings.FROMMAIL, [clamuser.mail] , fail_silently=False)
+            #send_mail('Webservice account on ' + settings.DOMAIN , 'Dear ' + clamuser.fullname + '\n\nYour webservice account on ' + settings.DOMAIN + ' has had its password changed to: ' + request.POST['newpw'] + ".\n\n(this is an automated message)", settings.FROMMAIL, [clamuser.mail] , fail_silently=False)
             return HttpResponse("Password changed", content_type="text/plain")
         else:
             return HttpResponseForbidden("Current password is invalid", content_type="text/plain")
