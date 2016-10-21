@@ -8,14 +8,14 @@
   <body>
       <div id="container">
           <div id="header">
-              <h1>Change Password Form</h1>
+              <h1>Forgot username/password?</h1>
           </div>
           <div class="box">              
-              <form method="post" action="/changepw/{{ userid }}">
+              <p>Enter your e-mail address and a new password will be sent to you along with your username:</p>
+              <form method="post" action="/resetpw/">
                 {% csrf_token %}
-                Current password: <input type="password" name="pw" /><br />
-                New password: <input type="password" name="newpw" /><br />
-                <input type="submit" value="Change Password" />
+                E-mail: <input name="mail" /><br />
+                <input type="submit" value="Reset Password" />
               <form>
           </div>
         </div>          
