@@ -112,7 +112,7 @@ def resetpw(request):
             clamuser.password = ''.join(random.choice(chars) for i in range(length))
             clamuser.save()
             send_mail('Webservice account on ' + settings.DOMAIN , 'Dear ' + clamuser.fullname + '\n\nYour webservice account on ' + settings.DOMAIN + ' has had a password reset.\n\nUsername: ' + clamuser.username + '\nPassword: ' + clamuser.password + '\n\nImportant: Please change this password immediately to one of your own choosing using ' + settings.BASEURL + 'changepw/' + str(clamuser.pk)+ '\n\nIf you did not request this, please notify us immediately by replying to this message.\n\n(this is an automated message)', settings.FROMMAIL, [clamuser.mail] , fail_silently=False)
-            send_mail('[' + settings.DOMAIN + '] Password reset for ' + clamuser.username  , 'User ' + clamuser.username + ' (' + clamuser.fullname + ') forgot his credentials and executed a reset from IP ' + settings.META.get('REMOTE_ADDR') + '. This is an automated notification and no further action is required.', settings.FROMMAIL, [ x[1] for x in settings.ADMINS ] , fail_silently=False)
+            send_mail('[' + settings.DOMAIN + '] Password reset for ' + clamuser.username  , 'User ' + clamuser.username + ' (' + clamuser.fullname + ') forgot his credentials and executed a reset from IP ' + request.META.get('REMOTE_ADDR') + '. This is an automated notification and no further action is required.', settings.FROMMAIL, [ x[1] for x in settings.ADMINS ] , fail_silently=False)
         if found:
             return HttpResponse("Done, please check your mail and follow the instructions...", content_type="text/plain")
         else:
