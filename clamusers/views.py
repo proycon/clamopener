@@ -101,7 +101,7 @@ def changepw(request, userid):
         return render_to_response('changepw.html',{'userid': userid},context_instance=c)
 
 
-def resetpw(request, userid):
+def resetpw(request):
     if request.method == 'POST' and 'mail' in request.POST:
         found = False
         for clamuser in CLAMUsers.objects.filter(mail=request.POST['mail']):
