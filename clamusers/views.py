@@ -1,10 +1,14 @@
+from django import VERSION
 from django.shortcuts import render_to_response
 from clamopener import settings
 from clamopener.clamusers.forms import RegisterForm, pwhash
 from clamopener.clamusers.models import CLAMUsers,PendingUsers
 from django.http import HttpResponse, HttpResponseForbidden,HttpResponseNotFound
 from django.core.mail import send_mail
-from django.core.context_processors import csrf
+if VERSION[0] >= 2 or VERSION[1] >= 8: #Django 1.8 and higher
+    from django.template.context_processors import csrf
+else:
+    from django.core.context_processors import csrf
 from django.template import RequestContext
 from django.db import IntegrityError
 import string, os, random

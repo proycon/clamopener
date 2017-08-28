@@ -34,4 +34,3 @@ urlpatterns = [
 if VERSION[0] == 1 and VERSION[1] < 8: #Django <1.8
     urlpatterns = patterns('',*urlpatterns)
 
-
