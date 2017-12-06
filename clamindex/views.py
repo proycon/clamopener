@@ -1,6 +1,6 @@
 # Create your views here.
 from clamopener import settings
-from django.shortcuts import render_to_response
+from django.shortcuts import render
 
-def index(request):    
-    return render_to_response('index.html', {'services': settings.SERVICES})
+def index(request):
+    return render(request, 'index.html', {'services': settings.SERVICES})

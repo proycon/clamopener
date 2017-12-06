@@ -1,5 +1,5 @@
 from django import VERSION
-from django.shortcuts import render_to_response
+from django.shortcuts import render_to_response, render
 from clamopener import settings
 from clamopener.clamusers.forms import RegisterForm, pwhash
 from clamopener.clamusers.models import CLAMUsers,PendingUsers
@@ -46,10 +46,8 @@ def register(request):
                 send_mail('[' + settings.DOMAIN + '] Registration request from ' + clamuser.username + ' pending approval' , 'The following new account is pending approval:\n\nUsername: ' + clamuser.username + '\nFull name: '  +clamuser.fullname + '\nInstitution: ' + clamuser.institution + '\nMail: ' + clamuser.mail + '\n\nTo approve this user go to: ' + settings.BASEURL + 'activate/' + str(clamuser.pk), settings.FROMMAIL, [ x[1] for x in settings.ADMINS ] , fail_silently=False)
                 return render_to_response('submitted.html')
     else:
-        c = RequestContext(request)
-        c.update(csrf(request))
         form = RegisterForm() # An unbound form
-        return render_to_response('register.html', {'form': form},context_instance=c)
+        return render(request, 'register.html', {'form': form})
 
 
 def activate(request, userid):
@@ -74,10 +72,7 @@ def activate(request, userid):
             pendinguser = PendingUsers.objects.get(pk=int(userid))
         except:
             return HttpResponseNotFound("No such pending user, has probably already been activated", content_type="text/plain")
-
-        c = RequestContext(request)
-        c.update(csrf(request))
-        return render_to_response('activate.html',{'userid': userid},context_instance=c)
+        return render(request, 'activate.html',{'userid': userid})
 
 
 def changepw(request, userid):
@@ -102,7 +97,7 @@ def changepw(request, userid):
 
         c = RequestContext(request)
         c.update(csrf(request))
-        return render_to_response('changepw.html',{'userid': userid},context_instance=c)
+        return render(request, 'changepw.html',{'userid': userid})
 
 
 def resetpw(request):
@@ -123,21 +118,15 @@ def resetpw(request):
         else:
             return HttpResponseForbidden("No such user exists", content_type="text/plain")
     else:
-        c = RequestContext(request)
-        c.update(csrf(request))
-        return render_to_response('resetpw.html',context_instance=c)
+        return render(request, 'resetpw.html')
 
 def userlist(request):
     if request.method == 'POST':
         if hashlib.md5(request.POST['pw']).hexdigest() != settings.MASTER_PASSWORD:
             return HttpResponseForbidden("Master password invalid", content_type="text/plain")
-        c = RequestContext(request)
-        c.update(csrf(request))
-        return render_to_response('userlist_view.html',{'users': CLAMUsers.objects.filter(active=1)},context_instance=c)
+        return render(request, 'userlist_view.html',{'users': CLAMUsers.objects.filter(active=1)})
     else:
-        c = RequestContext(request)
-        c.update(csrf(request))
-        return render_to_response('userlist.html',context_instance=c)
+        return render(request, 'userlist.html')
 
 def report(request):
     #s = "The following accounts are pending approval:\n\n"
@@ -153,10 +142,4 @@ def report(request):
     #send_mail('[' + settings.DOMAIN + '] Report of pending accounts' , s , settings.FROMMAIL, [ x[1] for x in settings.ADMINS ] , fail_silently=False)
 
     return HttpResponse("not implemented")
-
-
-
-
-
-
 
