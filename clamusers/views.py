@@ -81,7 +81,7 @@ def changepw(request, userid):
             clamuser = CLAMUsers.objects.get(pk=int(userid))
         except:
             return HttpResponseNotFound("No such user", content_type="text/plain")
-        if ((pwhash(clamuser.username,request.POST['pw']) == clamuser.password) or (hashlib.md5(request.POST['pw']).hexdigest() == settings.MASTER_PASSWORD)):
+        if ((pwhash(clamuser.username,request.POST['pw'].encode('utf-8')) == clamuser.password) or (hashlib.md5(request.POST['pw'].encode('utf-8')).hexdigest() == settings.MASTER_PASSWORD)):
             clamuser.password=pwhash(clamuser.username,request.POST['newpw'])
             clamuser.save()
             #send_mail('Webservice account on ' + settings.DOMAIN , 'Dear ' + clamuser.fullname + '\n\nYour webservice account on ' + settings.DOMAIN + ' has had its password changed to: ' + request.POST['newpw'] + ".\n\n(this is an automated message)", settings.FROMMAIL, [clamuser.mail] , fail_silently=False)
@@ -122,7 +122,7 @@ def resetpw(request):
 
 def userlist(request):
     if request.method == 'POST':
-        if hashlib.md5(request.POST['pw']).hexdigest() != settings.MASTER_PASSWORD:
+        if hashlib.md5(request.POST['pw'].encode('utf-8')).hexdigest() != settings.MASTER_PASSWORD:
             return HttpResponseForbidden("Master password invalid", content_type="text/plain")
         return render(request, 'userlist_view.html',{'users': CLAMUsers.objects.filter(active=1)})
     else:
