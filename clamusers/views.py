@@ -52,7 +52,7 @@ def register(request):
 
 def activate(request, userid):
     if request.method == 'POST':
-        if str(hashlib.md5(request.POST['pw'].encode('utf-8')).hexdigest(),'utf-8') == settings.MASTER_PASSWORD:
+        if hashlib.md5(request.POST['pw'].encode('utf-8')).hexdigest() == settings.MASTER_PASSWORD:
             try:
                 pendinguser = PendingUsers.objects.get(pk=int(userid))
             except:
