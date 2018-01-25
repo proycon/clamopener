@@ -10,7 +10,11 @@ except ImportError:
 
 def pwhash(user, password):
     #computes a password hash for a given user and plaintext password
-    return md5(user.encode('utf-8') + b':' + settings.REALM.encode('utf-8') + b':' + password.encode('utf-8')).hexdigest()
+    if not isinstance(user, bytes):
+        user = user.encode('utf-8')
+    if not isinstance(password, bytes):
+        password = password.encode('utf-8')
+    return md5(user + b':' + settings.REALM.encode('utf-8') + b':' + password).hexdigest()
 
 class RegisterForm(forms.ModelForm):
     mail = forms.EmailField( label='E-Mail',max_length = 255 ,required=True)
