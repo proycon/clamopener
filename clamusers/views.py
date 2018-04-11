@@ -19,10 +19,11 @@ def autoactivate(clamuser):
         if '@' not in clamuser.mail:
             return False
         userdomain = clamuser.mail[clamuser.mail.find('@')+1:]
-        for domain in settings.AUTOACTIVATE:
-            if userdomain == domain or userdomain.endswith('.' + domain):
-                return True
-        return False
+        return True
+        #for domain in settings.AUTOACTIVATE:
+        #    if userdomain == domain or userdomain.endswith('.' + domain):
+        #        return True
+        #return False
     except AttributeError:
         return False
 
