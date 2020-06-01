@@ -41,6 +41,8 @@ def register(request):
             else:
                 send_mail('[' + settings.DOMAIN + '] Registration request from ' + clamuser.username + ' pending approval' , 'The following new account is pending approval:\n\nUsername: ' + clamuser.username + '\nFull name: '  +clamuser.fullname + '\nInstitution: ' + clamuser.institution + '\nMail: ' + clamuser.mail + '\n\nTo approve this user go to: ' + settings.BASEURL + 'activate/' + str(clamuser.pk), settings.FROMMAIL, [ x[1] for x in settings.ADMINS ] , fail_silently=False)
                 return render_to_response('submitted.html')
+        else:
+            return HttpResponseForbidden("One or more entered fields were not valid, please go back and try again", content_type="text/plain")
     else:
         c = RequestContext(request)
         c.update(csrf(request))
