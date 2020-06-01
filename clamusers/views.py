@@ -1,10 +1,14 @@
-from django.shortcuts import render_to_response
+from django import VERSION
+from django.shortcuts import render_to_response, render
 from clamopener import settings
 from clamopener.clamusers.forms import RegisterForm, pwhash
 from clamopener.clamusers.models import CLAMUsers,PendingUsers
 from django.http import HttpResponse, HttpResponseForbidden,HttpResponseNotFound
 from django.core.mail import send_mail
-from django.core.context_processors import csrf
+if VERSION[0] >= 2 or VERSION[1] >= 8: #Django 1.8 and higher
+    from django.template.context_processors import csrf
+else:
+    from django.core.context_processors import csrf
 from django.template import RequestContext
 from django.db import IntegrityError
 import string, os, random
@@ -15,10 +19,11 @@ def autoactivate(clamuser):
         if '@' not in clamuser.mail:
             return False
         userdomain = clamuser.mail[clamuser.mail.find('@')+1:]
-        for domain in settings.AUTOACTIVATE:
-            if userdomain == domain or userdomain.endswith('.' + domain):
-                return True
-        return False
+        return True
+        #for domain in settings.AUTOACTIVATE:
+        #    if userdomain == domain or userdomain.endswith('.' + domain):
+        #        return True
+        #return False
     except AttributeError:
         return False
 
@@ -44,15 +49,13 @@ def register(request):
         else:
             return HttpResponseForbidden("One or more entered fields were not valid, please go back and try again", content_type="text/plain")
     else:
-        c = RequestContext(request)
-        c.update(csrf(request))
         form = RegisterForm() # An unbound form
-        return render_to_response('register.html', {'form': form},context_instance=c)
+        return render(request, 'register.html', {'form': form})
 
 
 def activate(request, userid):
     if request.method == 'POST':
-        if hashlib.md5(request.POST['pw']).hexdigest() == settings.MASTER_PASSWORD:
+        if hashlib.md5(request.POST['pw'].encode('utf-8')).hexdigest() == settings.MASTER_PASSWORD:
             try:
                 pendinguser = PendingUsers.objects.get(pk=int(userid))
             except:
@@ -72,10 +75,7 @@ def activate(request, userid):
             pendinguser = PendingUsers.objects.get(pk=int(userid))
         except:
             return HttpResponseNotFound("No such pending user, has probably already been activated", content_type="text/plain")
-
-        c = RequestContext(request)
-        c.update(csrf(request))
-        return render_to_response('activate.html',{'userid': userid},context_instance=c)
+        return render(request, 'activate.html',{'userid': userid})
 
 
 def changepw(request, userid):
@@ -84,8 +84,8 @@ def changepw(request, userid):
             clamuser = CLAMUsers.objects.get(pk=int(userid))
         except:
             return HttpResponseNotFound("No such user", content_type="text/plain")
-        if ((pwhash(clamuser.username,request.POST['pw']) == clamuser.password) or (hashlib.md5(request.POST['pw']).hexdigest() == settings.MASTER_PASSWORD)):
-            clamuser.password=pwhash(clamuser.username,request.POST['newpw'])
+        if ((pwhash(clamuser.username,request.POST['pw'].encode('utf-8')) == clamuser.password) or (hashlib.md5(request.POST['pw'].encode('utf-8')).hexdigest() == settings.MASTER_PASSWORD)):
+            clamuser.password=pwhash(clamuser.username,request.POST['newpw'].encode('utf-8'))
             clamuser.save()
             #send_mail('Webservice account on ' + settings.DOMAIN , 'Dear ' + clamuser.fullname + '\n\nYour webservice account on ' + settings.DOMAIN + ' has had its password changed to: ' + request.POST['newpw'] + ".\n\n(this is an automated message)", settings.FROMMAIL, [clamuser.mail] , fail_silently=False)
             return HttpResponse("Password changed", content_type="text/plain")
@@ -100,10 +100,10 @@ def changepw(request, userid):
 
         c = RequestContext(request)
         c.update(csrf(request))
-        return render_to_response('changepw.html',{'userid': userid},context_instance=c)
+        return render(request, 'changepw.html',{'userid': userid})
 
 
-def resetpw(request, userid):
+def resetpw(request):
     if request.method == 'POST' and 'mail' in request.POST:
         found = False
         for clamuser in CLAMUsers.objects.filter(mail=request.POST['mail']):
@@ -111,30 +111,25 @@ def resetpw(request, userid):
             length = 10
             chars = string.ascii_letters + string.digits + '!@#$%^&*()'
             random.seed = (os.urandom(1024))
-            clamuser.password = ''.join(random.choice(chars) for i in range(length))
+            newpassword= ''.join(random.choice(chars) for i in range(length))
+            clamuser.password = pwhash(clamuser.username,newpassword)
             clamuser.save()
-            send_mail('Webservice account on ' + settings.DOMAIN , 'Dear ' + clamuser.fullname + '\n\nYour webservice account on ' + settings.DOMAIN + ' has had a password reset.\n\nUsername: ' + clamuser.username + '\nPassword: ' + clamuser.password + '\n\nImportant: Please change this password immediately to one of your own choosing using ' + settings.BASEURL + 'changepw/' + str(clamuser.pk)+ '\n\nIf you did not request this, please notify us immediately by replying to this message.\n\n(this is an automated message)', settings.FROMMAIL, [clamuser.mail] , fail_silently=False)
-            send_mail('[' + settings.DOMAIN + '] Password reset for ' + clamuser.username  , 'User ' + clamuser.username + ' (' + clamuser.fullname + ') forgot his credentials and executed a reset from IP ' + settings.META.get('REMOTE_ADDR') + '. This is an automated notification and no further action is required.', settings.FROMMAIL, [ x[1] for x in settings.ADMINS ] , fail_silently=False)
+            send_mail('Webservice account on ' + settings.DOMAIN , 'Dear ' + clamuser.fullname + '\n\nYour webservice account on ' + settings.DOMAIN + ' has had a password reset.\n\nUsername: ' + clamuser.username + '\nPassword: ' + newpassword + '\n\nImportant: Please change this password immediately to one of your own choosing using ' + settings.BASEURL + 'changepw/' + str(clamuser.pk)+ '\n\nIf you did not request this, please notify us immediately by replying to this message.\n\n(this is an automated message)', settings.FROMMAIL, [clamuser.mail] , fail_silently=False)
+            send_mail('[' + settings.DOMAIN + '] Password reset for ' + clamuser.username  , 'User ' + clamuser.username + ' (' + clamuser.fullname + ') forgot his credentials and executed a reset from IP ' + request.META.get('REMOTE_ADDR') + '. This is an automated notification and no further action is required.', settings.FROMMAIL, [ x[1] for x in settings.ADMINS ] , fail_silently=False)
         if found:
             return HttpResponse("Done, please check your mail and follow the instructions...", content_type="text/plain")
         else:
             return HttpResponseForbidden("No such user exists", content_type="text/plain")
     else:
-        c = RequestContext(request)
-        c.update(csrf(request))
-        return render_to_response('resetpw.html',context_instance=c)
+        return render(request, 'resetpw.html')
 
 def userlist(request):
     if request.method == 'POST':
-        if hashlib.md5(request.POST['pw']).hexdigest() != settings.MASTER_PASSWORD:
+        if hashlib.md5(request.POST['pw'].encode('utf-8')).hexdigest() != settings.MASTER_PASSWORD:
             return HttpResponseForbidden("Master password invalid", content_type="text/plain")
-        c = RequestContext(request)
-        c.update(csrf(request))
-        return render_to_response('userlist_view.html',{'users': CLAMUsers.objects.filter(active=1)},context_instance=c)
+        return render(request, 'userlist_view.html',{'users': CLAMUsers.objects.filter(active=1)})
     else:
-        c = RequestContext(request)
-        c.update(csrf(request))
-        return render_to_response('userlist.html',context_instance=c)
+        return render(request, 'userlist.html')
 
 def report(request):
     #s = "The following accounts are pending approval:\n\n"
@@ -150,10 +145,4 @@ def report(request):
     #send_mail('[' + settings.DOMAIN + '] Report of pending accounts' , s , settings.FROMMAIL, [ x[1] for x in settings.ADMINS ] , fail_silently=False)
 
     return HttpResponse("not implemented")
-
-
-
-
-
-
 
